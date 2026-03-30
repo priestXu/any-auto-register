@@ -12,15 +12,13 @@ services:
         https_proxy: "${HTTPS_PROXY:-}"
         all_proxy: "${ALL_PROXY:-}"
         no_proxy: "${NO_PROXY:-}"
-    container_name: any-auto-register
+    container_name: any-auto-register-dev
     init: true
     restart: unless-stopped
     shm_size: 1gb
     ports:
       - "${APP_PORT:-8000}:8000"
       - "${SOLVER_PUBLIC_PORT:-8889}:8889"
-      - 8317:8317
-      - 8011:8011
     environment:
       HOST: 0.0.0.0
       PORT: 8000
@@ -30,6 +28,7 @@ services:
       APP_DISABLE_CONDA_WARNING: "1"
       APP_SOLVER_HEADLESS: "${APP_SOLVER_HEADLESS:-1}"
       APP_SOLVER_BROWSER_TYPE: "${APP_SOLVER_BROWSER_TYPE:-camoufox}"
+      APP_RELOAD: "1"
       APP_GROK2API_PYTHON: "${APP_GROK2API_PYTHON:-}"
       HTTP_PROXY: "${HTTP_PROXY:-}"
       HTTPS_PROXY: "${HTTPS_PROXY:-}"
@@ -41,6 +40,11 @@ services:
       no_proxy: "${NO_PROXY:-}"
     volumes:
       - any_auto_register_data:/app/data
+      - ./main.py:/app/main.py:ro
+      - ./api:/app/api:ro
+      - ./core:/app/core:ro
+      - ./platforms:/app/platforms:ro
+      - ./services:/app/services:ro
 
 volumes:
   any_auto_register_data:

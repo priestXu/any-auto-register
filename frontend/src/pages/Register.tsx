@@ -35,13 +35,13 @@ export default function Register() {
         captcha_solver: cfg.default_captcha_solver || 'yescaptcha',
         mail_provider: cfg.mail_provider || 'moemail',
         yescaptcha_key: cfg.yescaptcha_key || '',
-        moemail_api_url: cfg.moemail_api_url || '',
+        moemail_api_url: cfg.moemail_api_url || 'https://sall.cc',
         laoudo_auth: cfg.laoudo_auth || '',
         laoudo_email: cfg.laoudo_email || '',
         laoudo_account_id: cfg.laoudo_account_id || '',
-        duckmail_api_url: cfg.duckmail_api_url || '',
-        duckmail_provider_url: cfg.duckmail_provider_url || '',
-        duckmail_bearer: cfg.duckmail_bearer || '',
+        duckmail_api_url: cfg.duckmail_api_url || 'https://www.duckmail.sbs',
+        duckmail_provider_url: cfg.duckmail_provider_url || 'https://api.duckmail.sbs',
+        duckmail_bearer: cfg.duckmail_bearer || 'kevin273945',
         freemail_api_url: cfg.freemail_api_url || '',
         freemail_admin_token: cfg.freemail_admin_token || '',
         freemail_username: cfg.freemail_username || '',
@@ -210,6 +210,40 @@ export default function Register() {
               </Form.Item>
               <Form.Item name="laoudo_auth" label="JWT Token">
                 <Input placeholder="eyJ..." />
+              </Form.Item>
+            </>
+          )}
+          {mailProvider === 'moemail' && (
+            <Form.Item name="moemail_api_url" label="API URL">
+              <Input placeholder="https://sall.cc" />
+            </Form.Item>
+          )}
+          {mailProvider === 'duckmail' && (
+            <>
+              <Form.Item name="duckmail_api_url" label="Web URL">
+                <Input placeholder="https://www.duckmail.sbs" />
+              </Form.Item>
+              <Form.Item name="duckmail_provider_url" label="Provider URL">
+                <Input placeholder="https://api.duckmail.sbs" />
+              </Form.Item>
+              <Form.Item name="duckmail_bearer" label="Bearer Token">
+                <Input placeholder="kevin273945" />
+              </Form.Item>
+            </>
+          )}
+          {mailProvider === 'freemail' && (
+            <>
+              <Form.Item name="freemail_api_url" label="API URL">
+                <Input placeholder="https://mail.example.com" />
+              </Form.Item>
+              <Form.Item name="freemail_admin_token" label="Admin Token">
+                <Input.Password placeholder="admin-token" />
+              </Form.Item>
+              <Form.Item name="freemail_username" label="用户名（可选）">
+                <Input placeholder="admin" />
+              </Form.Item>
+              <Form.Item name="freemail_password" label="密码（可选）">
+                <Input.Password placeholder="password" />
               </Form.Item>
             </>
           )}

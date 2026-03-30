@@ -307,6 +307,55 @@ def _conda_exe() -> str | None:
     return None
 
 
+def _grok2api_python_launcher() -> tuple[list[str], str] | None:
+    configured = str(os.getenv("APP_GROK2API_PYTHON", "") or "").strip()
+    if configured:
+        candidates: list[tuple[list[str], str]] = [([configured], configured)]
+    else:
+        candidates = []
+
+    if sys.version_info >= (3, 13):
+        candidates.append(([sys.executable], sys.executable))
+
+    for name in ["python3.13", "python3"]:
+        exe = shutil.which(name)
+        if exe:
+            candidates.append(([exe], exe))
+
+    py_launcher = shutil.which("py")
+    if py_launcher:
+        candidates.append(([py_launcher, "-3.13"], "py -3.13"))
+
+    seen: set[tuple[str, ...]] = set()
+    for command, label in candidates:
+        key = tuple(command)
+        if key in seen:
+            continue
+        seen.add(key)
+        try:
+            check = subprocess.run(
+                command + [
+                    "-c",
+                    "import sys; raise SystemExit(0 if sys.version_info >= (3, 13) else 1)",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=_creationflags(),
+            )
+            if check.returncode == 0:
+                return command, label
+        except Exception:
+            continue
+    return None
+
+
+def _grok2api_venv_python(repo: Path) -> Path:
+    venv_dir = repo / ".venv-grok2api"
+    if os.name == "nt":
+        return venv_dir / "Scripts" / "python.exe"
+    return venv_dir / "bin" / "python"
+
+
 def _resolve_kiro_exe() -> str | None:
     try:
         from core.config_store import config_store
@@ -370,7 +419,7 @@ def _ensure_grok2api_conda_env(repo: Path) -> str:
     env_name = "grok2api-313"
     conda = _conda_exe()
     if not conda:
-        raise RuntimeError("未找到 conda，无法为 grok2api 自动创建 Python 3.13 环境")
+        raise RuntimeError("未找到 conda")
 
     check = subprocess.run(
         [conda, "run", "--no-capture-output", "-n", env_name, "python", "--version"],
@@ -403,6 +452,49 @@ def _ensure_grok2api_conda_env(repo: Path) -> str:
         )
         marker.write_text(env_name, encoding="utf-8")
     return env_name
+
+
+def _ensure_grok2api_venv(repo: Path) -> str:
+    selected = _grok2api_python_launcher()
+    if not selected:
+        raise RuntimeError("未找到 conda，也未找到可用的 Python 3.13 解释器，无法为 grok2api 创建运行环境")
+
+    launcher, launcher_label = selected
+    venv_dir = repo / ".venv-grok2api"
+    venv_python = _grok2api_venv_python(repo)
+    if not venv_python.exists():
+        subprocess.run(
+            launcher + ["-m", "venv", str(venv_dir)],
+            cwd=str(repo),
+            check=True,
+            creationflags=_creationflags(),
+        )
+
+    marker = repo / ".grok2api-env-ready"
+    expected_marker = f"venv:{launcher_label}"
+    if not marker.exists() or marker.read_text(encoding="utf-8").strip() != expected_marker:
+        subprocess.run(
+            [str(venv_python), "-m", "pip", "install", "--upgrade", "pip"],
+            cwd=str(repo),
+            check=True,
+            creationflags=_creationflags(),
+        )
+        subprocess.run(
+            [str(venv_python), "-m", "pip", "install", "."],
+            cwd=str(repo),
+            check=True,
+            creationflags=_creationflags(),
+        )
+        marker.write_text(expected_marker, encoding="utf-8")
+    return str(venv_python)
+
+
+def _ensure_grok2api_python_runner(repo: Path) -> list[str]:
+    conda = _conda_exe()
+    if conda:
+        env_name = _ensure_grok2api_conda_env(repo)
+        return [conda, "run", "--no-capture-output", "-n", env_name, "python"]
+    return [_ensure_grok2api_venv(repo)]
 
 
 def _ensure_cliproxyapi_runtime_config(repo: Path):
@@ -486,15 +578,8 @@ def _build_command(name: str) -> tuple[list[str], Path]:
 
     if name == "grok2api":
         _ensure_grok2api_runtime_config(repo)
-        env_name = _ensure_grok2api_conda_env(repo)
-        conda = _conda_exe()
-        return [
-            conda,
-            "run",
-            "--no-capture-output",
-            "-n",
-            env_name,
-            "python",
+        python_runner = _ensure_grok2api_python_runner(repo)
+        return python_runner + [
             "-m",
             "granian",
             "--interface",

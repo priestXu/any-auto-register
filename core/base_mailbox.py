@@ -94,9 +94,9 @@ def create_mailbox(provider: str, extra: dict = None, proxy: str = None) -> 'Bas
         return TempMailLolMailbox(proxy=proxy)
     elif provider == "duckmail":
         return DuckMailMailbox(
-            api_url=extra.get("duckmail_api_url", "https://www.duckmail.sbs"),
-            provider_url=extra.get("duckmail_provider_url", "https://api.duckmail.sbs"),
-            bearer=extra.get("duckmail_bearer", "kevin273945"),
+            api_url=extra.get("duckmail_api_url") or "https://www.duckmail.sbs",
+            provider_url=extra.get("duckmail_provider_url") or "https://api.duckmail.sbs",
+            bearer=extra.get("duckmail_bearer") or "kevin273945",
             proxy=proxy,
         )
     elif provider == "freemail":
@@ -109,7 +109,7 @@ def create_mailbox(provider: str, extra: dict = None, proxy: str = None) -> 'Bas
         )
     elif provider == "moemail":
         return MoeMailMailbox(
-            api_url=extra.get("moemail_api_url", "https://sall.cc"),
+            api_url=extra.get("moemail_api_url") or "https://sall.cc",
             proxy=proxy,
         )
     elif provider == "cfworker":
