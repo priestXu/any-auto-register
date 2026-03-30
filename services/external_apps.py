@@ -508,18 +508,52 @@ def _ensure_cliproxyapi_runtime_config(repo: Path):
         shutil.copyfile(repo / "config.example.yaml", config_path)
     secret = _get_setting("cliproxyapi_management_key", "cliproxyapi")
     lines = config_path.read_text(encoding="utf-8").splitlines()
-    updated_lines = []
-    replaced = False
+    updated_lines: list[str] = []
+    in_remote_management = False
+    remote_management_found = False
+    secret_written = False
     for line in lines:
-        if line.lstrip().startswith("secret-key:"):
+        stripped = line.strip()
+
+        if in_remote_management and stripped and not line[:1].isspace():
+            if not secret_written:
+                updated_lines.append(f'  secret-key: "{secret}"')
+                secret_written = True
+            in_remote_management = False
+
+        if stripped == "remote-management:":
+            remote_management_found = True
+            in_remote_management = True
+            updated_lines.append(line)
+            continue
+
+        if in_remote_management and stripped.startswith("secret-key:"):
             indent = line[: len(line) - len(line.lstrip())]
             updated_lines.append(f'{indent}secret-key: "{secret}"')
-            replaced = True
-        else:
-            updated_lines.append(line)
-    if not replaced:
+            secret_written = True
+            continue
+
+        updated_lines.append(line)
+
+    if in_remote_management and not secret_written:
         updated_lines.append(f'  secret-key: "{secret}"')
+        secret_written = True
+
+    if not remote_management_found:
+        if updated_lines and updated_lines[-1].strip():
+            updated_lines.append("")
+        updated_lines.append("remote-management:")
+        updated_lines.append(f'  secret-key: "{secret}"')
+
     config_path.write_text("\n".join(updated_lines) + "\n", encoding="utf-8")
+
+
+def _cliproxyapi_env() -> dict[str, str]:
+    env = os.environ.copy()
+    secret = _get_setting("cliproxyapi_management_key", "cliproxyapi")
+    # 官方支持使用 MANAGEMENT_PASSWORD 作为管理密钥，并会强制启用远程管理。
+    env["MANAGEMENT_PASSWORD"] = secret
+    return env
 
 
 def _ensure_grok2api_runtime_config(repo: Path):
@@ -623,11 +657,13 @@ def start(name: str) -> dict[str, Any]:
         log_file = _open_log(name)
         try:
             command, cwd = _build_command(name)
+            env = _cliproxyapi_env() if name == "cliproxyapi" else None
             proc = subprocess.Popen(
                 command,
                 cwd=str(cwd),
                 stdout=log_file,
                 stderr=subprocess.STDOUT,
+                env=env,
                 creationflags=_creationflags(),
             )
             _PROCS[name] = proc
