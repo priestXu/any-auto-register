@@ -63,6 +63,7 @@ RUN set -eux; \
     && apt-get install -y --no-install-recommends \
         curl \
         git \
+        gosu \
         libasound2 \
         libatk-bridge2.0-0 \
         libatk1.0-0 \
@@ -97,12 +98,12 @@ COPY api ./api
 COPY core ./core
 COPY platforms ./platforms
 COPY services ./services
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY --from=frontend-builder /app/static ./static
 
 RUN mkdir -p /app/data \
-    && chown -R appuser:appuser /app /home/appuser /ms-playwright
-
-USER appuser
+    && chown -R appuser:appuser /app /home/appuser /ms-playwright \
+    && chmod +x /usr/local/bin/entrypoint.sh
 
 ENV HOST=0.0.0.0 \
     PORT=8000 \
@@ -118,4 +119,5 @@ EXPOSE 8000 8889
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
     CMD curl -fsS http://127.0.0.1:8000/api/health || exit 1
 
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["python", "main.py"]
