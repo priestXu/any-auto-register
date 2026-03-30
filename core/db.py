@@ -3,12 +3,18 @@ from datetime import datetime, timezone
 from typing import Optional
 from sqlmodel import Field, SQLModel, create_engine, Session, select
 import json
+from .runtime_paths import PROJECT_ROOT, resolve_runtime_file
 
 
 def _utcnow():
     return datetime.now(timezone.utc)
 
-DATABASE_URL = "sqlite:///account_manager.db"
+DATABASE_PATH = resolve_runtime_file(
+    "APP_DB_PATH",
+    "db/account_manager.db",
+    PROJECT_ROOT / "account_manager.db",
+)
+DATABASE_URL = f"sqlite:///{DATABASE_PATH.as_posix()}"
 engine = create_engine(DATABASE_URL)
 
 

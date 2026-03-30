@@ -17,6 +17,7 @@ from api.actions import router as actions_router
 from api.integrations import router as integrations_router
 
 EXPECTED_CONDA_ENV = os.getenv("APP_CONDA_ENV", "any-auto-register")
+DISABLE_CONDA_WARNING = os.getenv("APP_DISABLE_CONDA_WARNING", "0").lower() in {"1", "true", "yes"}
 
 
 def _detect_conda_env() -> str:
@@ -36,6 +37,8 @@ def _print_runtime_info() -> None:
     current_env = _detect_conda_env()
     print(f"[Runtime] Python: {sys.executable}")
     print(f"[Runtime] Conda Env: {current_env or '未检测到'}")
+    if DISABLE_CONDA_WARNING or not EXPECTED_CONDA_ENV:
+        return
     if current_env and current_env != EXPECTED_CONDA_ENV:
         print(
             f"[WARN] 当前环境为 '{current_env}'，推荐使用 '{EXPECTED_CONDA_ENV}' 启动，"
@@ -58,8 +61,11 @@ async def lifespan(app: FastAPI):
     print(f"[OK] 已加载平台: {[p['name'] for p in list_platforms()]}")
     from core.scheduler import scheduler
     scheduler.start()
-    from services.solver_manager import start_async
-    start_async()
+    from services.solver_manager import auto_start_enabled, start_async
+    if auto_start_enabled():
+        start_async()
+    else:
+        print("[Solver] 已禁用自动启动")
     yield
     from core.scheduler import scheduler as _scheduler
     _scheduler.stop()
@@ -93,10 +99,17 @@ def solver_status():
 
 @app.post("/api/solver/restart")
 def solver_restart():
-    from services.solver_manager import stop, start_async
+    from services.solver_manager import auto_start_enabled, stop, start_async
     stop()
+    if not auto_start_enabled():
+        return {"message": "本地 Solver 已禁用，未执行启动"}
     start_async()
     return {"message": "重启中"}
+
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok"}
 
 
 _static_dir = os.path.join(os.path.dirname(__file__), "static")

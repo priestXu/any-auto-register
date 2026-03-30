@@ -1,5 +1,6 @@
 """验证码解决器基类"""
 from abc import ABC, abstractmethod
+from .runtime_paths import default_solver_url, env_flag
 
 
 class BaseCaptcha(ABC):
@@ -57,8 +58,8 @@ class ManualCaptcha(BaseCaptcha):
 class LocalSolverCaptcha(BaseCaptcha):
     """调用本地 api_solver 服务解 Turnstile（Camoufox/patchright）"""
 
-    def __init__(self, solver_url: str = "http://localhost:8889"):
-        self.solver_url = solver_url.rstrip("/")
+    def __init__(self, solver_url: str | None = None):
+        self.solver_url = str(solver_url or default_solver_url()).rstrip("/")
 
     def solve_turnstile(self, page_url: str, site_key: str) -> str:
         import requests, time
@@ -95,13 +96,16 @@ class LocalSolverCaptcha(BaseCaptcha):
         raise NotImplementedError
 
     @staticmethod
-    def start_solver(headless: bool = True, browser_type: str = "camoufox",
-                     port: int = 8889) -> None:
+    def start_solver(headless: bool | None = None, browser_type: str | None = None,
+                     port: int | None = None) -> None:
         """在后台线程启动本地 solver 服务"""
         import subprocess, sys, os
         solver_path = os.path.join(
             os.path.dirname(__file__), "..", "services", "turnstile_solver", "start.py"
         )
+        headless = env_flag("APP_SOLVER_HEADLESS", True) if headless is None else headless
+        port = int(port or os.getenv("SOLVER_PORT", "8889"))
+        browser_type = str(browser_type or os.getenv("APP_SOLVER_BROWSER_TYPE", "camoufox"))
         cmd = [
             sys.executable, solver_path,
             "--port", str(port),

@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 from enum import Enum
 import time
+from .runtime_paths import default_solver_url
 
 
 class AccountStatus(str, Enum):
@@ -108,6 +109,6 @@ class BasePlatform(ABC):
         elif t == "manual":
             return ManualCaptcha()
         elif t == "local_solver":
-            url = self.config.extra.get("solver_url", "http://localhost:8889")
+            url = self.config.extra.get("solver_url", default_solver_url())
             return LocalSolverCaptcha(url)
         raise ValueError(f"未知验证码解决器: {t}")

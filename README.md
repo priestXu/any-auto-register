@@ -80,6 +80,7 @@
 - Python 3.12+
 - Node.js 18+
 - Conda（推荐）
+- Docker / Docker Compose（如使用容器部署）
 
 ## 推荐环境
 
@@ -140,6 +141,50 @@ cd ..
 ```text
 D:\codemodule\ai\any-auto-register\static
 ```
+
+***
+
+## Docker Compose 启动
+
+适合直接把 Web 版后端和前端一起跑起来，不依赖本地 Conda/Node 环境。
+
+### 1. 构建并启动
+
+```bash
+docker compose up -d --build
+```
+
+默认会暴露：
+
+- `http://localhost:8000`：主应用
+- `http://localhost:8889`：Turnstile Solver
+
+### 2. 停止
+
+```bash
+docker compose down
+```
+
+### 3. 数据持久化
+
+Compose 默认会把运行时数据写到命名卷 `any_auto_register_data`，包括：
+
+- SQLite 数据库
+- 插件仓库目录
+- Solver / 外部服务日志
+
+### 4. 常用环境变量
+
+- `APP_PORT`：映射到宿主机的应用端口，默认 `8000`
+- `SOLVER_PUBLIC_PORT`：映射到宿主机的 Solver 端口，默认 `8889`
+- `APP_AUTO_START_SOLVER`：是否自动拉起本地 Solver，默认 `1`
+- `APP_SOLVER_HEADLESS`：Solver 是否使用无头模式，默认 `1`
+- `APP_SOLVER_BROWSER_TYPE`：Solver 浏览器类型，默认 `camoufox`
+
+### 5. 说明
+
+- Compose 方案默认只覆盖 Web 应用本身，不包含 Electron 桌面壳。
+- 某些插件能力依赖 Windows 桌面程序或额外工具链，在 Linux 容器里可能无法直接使用，需要按你的实际环境再扩展镜像。
 
 ***
 

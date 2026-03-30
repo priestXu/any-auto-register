@@ -12,11 +12,18 @@ from pathlib import Path
 from typing import Any
 
 import requests
+from core.runtime_paths import resolve_runtime_dir
 
-_ROOT = Path(__file__).resolve().parents[2]
-_EXT_ROOT = _ROOT / "_ext_targets"
-_LOG_ROOT = Path(__file__).resolve().parent / "external_logs"
-_LOG_ROOT.mkdir(parents=True, exist_ok=True)
+_EXT_ROOT = resolve_runtime_dir(
+    "APP_EXT_ROOT",
+    "ext_targets",
+    Path(__file__).resolve().parents[2] / "_ext_targets",
+)
+_LOG_ROOT = resolve_runtime_dir(
+    "APP_EXTERNAL_LOG_DIR",
+    "logs/external",
+    Path(__file__).resolve().parent / "external_logs",
+)
 
 _REMOTE_URLS = {
     "cliproxyapi": "https://github.com/router-for-me/CLIProxyAPI.git",
