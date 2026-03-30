@@ -166,7 +166,7 @@ export default function Register() {
             <Select
               options={[
                 { value: 'yescaptcha', label: 'YesCaptcha' },
-                { value: 'local_solver', label: '本地 Solver (Camoufox)' },
+                { value: 'local_solver', label: '本地 Solver (Chromium / Camoufox)' },
                 { value: 'manual', label: '手动' },
               ]}
             />
@@ -295,7 +295,7 @@ export default function Register() {
               <Input />
             </Form.Item>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              启动命令: python services/turnstile_solver/start.py --browser_type camoufox --port 8889
+              启动命令: python services/turnstile_solver/start.py --browser_type chromium --port 8889
             </Text>
           </Card>
         )}

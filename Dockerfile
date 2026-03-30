@@ -90,7 +90,7 @@ RUN --mount=type=cache,target=/root/.cache/pip pip install --no-cache-dir -r req
 RUN useradd --create-home --shell /bin/bash appuser
 
 USER appuser
-RUN python -m camoufox fetch
+RUN python -m camoufox fetch || true
 
 USER root
 COPY main.py ./
@@ -112,7 +112,7 @@ ENV HOST=0.0.0.0 \
     APP_AUTO_START_SOLVER=1 \
     APP_DISABLE_CONDA_WARNING=1 \
     APP_SOLVER_HEADLESS=1 \
-    APP_SOLVER_BROWSER_TYPE=camoufox
+    APP_SOLVER_BROWSER_TYPE=chromium
 
 EXPOSE 8000 8889
 

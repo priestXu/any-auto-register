@@ -56,7 +56,7 @@ class ManualCaptcha(BaseCaptcha):
 
 
 class LocalSolverCaptcha(BaseCaptcha):
-    """调用本地 api_solver 服务解 Turnstile（Camoufox/patchright）"""
+    """调用本地 api_solver 服务解 Turnstile（Chromium / Camoufox）"""
 
     def __init__(self, solver_url: str | None = None):
         self.solver_url = str(solver_url or default_solver_url()).rstrip("/")
@@ -105,7 +105,7 @@ class LocalSolverCaptcha(BaseCaptcha):
         )
         headless = env_flag("APP_SOLVER_HEADLESS", True) if headless is None else headless
         port = int(port or os.getenv("SOLVER_PORT", "8889"))
-        browser_type = str(browser_type or os.getenv("APP_SOLVER_BROWSER_TYPE", "camoufox"))
+        browser_type = str(browser_type or os.getenv("APP_SOLVER_BROWSER_TYPE", "chromium"))
         cmd = [
             sys.executable, solver_path,
             "--port", str(port),

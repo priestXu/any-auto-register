@@ -37,6 +37,8 @@ COLORS = {
     'RESET': '\033[0m',
 }
 
+PLAYWRIGHT_BROWSER_TYPES = {'chromium', 'chrome', 'msedge'}
+
 
 class CustomLogger(logging.Logger):
     @staticmethod
@@ -152,23 +154,58 @@ class TurnstileAPIServer:
         """Initialize the browser and page pool on startup."""
         self.display_welcome()
         logger.info("Starting browser initialization")
+        await init_db()
         try:
-            await init_db()
             await self._initialize_browser()
-            
-            # Запускаем периодическую очистку старых результатов
-            asyncio.create_task(self._periodic_cleanup())
-            
         except Exception as e:
-            logger.error(f"Failed to initialize browser: {str(e)}")
-            raise
+            if await self._fallback_to_chromium(e):
+                await self._initialize_browser()
+            else:
+                logger.error(f"Failed to initialize browser: {str(e)}")
+                raise
+
+        # Запускаем периодическую очистку старых результатов
+        asyncio.create_task(self._periodic_cleanup())
+
+    async def _cleanup_browser_pool(self) -> None:
+        while not self.browser_pool.empty():
+            _, browser, _ = await self.browser_pool.get()
+            try:
+                await browser.close()
+            except Exception:
+                pass
+
+    async def _fallback_to_chromium(self, error: Exception) -> bool:
+        if self.browser_type != "camoufox":
+            return False
+        if async_playwright is None:
+            logger.warning(
+                f"Camoufox startup failed and chromium fallback is unavailable: {error}"
+            )
+            return False
+
+        await self._cleanup_browser_pool()
+        self.browser_type = "chromium"
+        self.browser_name = None
+        self.browser_version = None
+        if not self.useragent and not self.use_random_config:
+            browser, version, useragent, sec_ch_ua = browser_config.get_random_browser_config("chromium")
+            self.browser_name = browser
+            self.browser_version = version
+            self.useragent = useragent
+            self.sec_ch_ua = sec_ch_ua
+
+        logger.warning(
+            f"Camoufox startup failed: {error}. Falling back to chromium."
+        )
+        return True
 
     async def _initialize_browser(self) -> None:
         """Initialize the browser and create the page pool."""
         playwright = None
         camoufox = None
 
-        if self.browser_type in ['chromium', 'chrome', 'msedge']:
+        if self.browser_type in PLAYWRIGHT_BROWSER_TYPES:
             if async_playwright is None:
                 raise RuntimeError(
                     "当前浏览器模式需要 patchright，但未安装。请执行: pip install patchright"
@@ -183,7 +220,7 @@ class TurnstileAPIServer:
 
         browser_configs = []
         for _ in range(self.thread_count):
-            if self.browser_type in ['chromium', 'chrome', 'msedge']:
+            if self.browser_type in PLAYWRIGHT_BROWSER_TYPES:
                 if self.use_random_config:
                     browser, version, useragent, sec_ch_ua = browser_config.get_random_browser_config(self.browser_type)
                 elif self.browser_name and self.browser_version:
@@ -225,7 +262,7 @@ class TurnstileAPIServer:
                 browser_args.append(f"--user-agent={config['useragent']}")
             
             browser = None
-            if self.browser_type in ['chromium', 'chrome', 'msedge'] and playwright:
+            if self.browser_type in PLAYWRIGHT_BROWSER_TYPES and playwright:
                 browser = await playwright.chromium.launch(
                     channel=self.browser_type,
                     headless=self.headless,
@@ -240,7 +277,7 @@ class TurnstileAPIServer:
             if self.debug:
                 logger.info(f"Browser {i + 1} initialized successfully with {config['browser_name']} {config['browser_version']}")
 
-        logger.info(f"Browser pool initialized with {self.browser_pool.qsize()} browsers")
+        logger.info(f"Browser pool initialized with {self.browser_pool.qsize()} browsers using {self.browser_type}")
         
         if self.use_random_config:
             logger.info(f"Each browser in pool received random configuration")

@@ -10,7 +10,7 @@ from core.runtime_paths import env_flag, resolve_runtime_file
 
 SOLVER_PORT = int(os.getenv("SOLVER_PORT", "8889"))
 SOLVER_URL = f"http://127.0.0.1:{SOLVER_PORT}"
-SOLVER_BROWSER_TYPE = str(os.getenv("APP_SOLVER_BROWSER_TYPE", "camoufox") or "camoufox").strip()
+SOLVER_BROWSER_TYPE = str(os.getenv("APP_SOLVER_BROWSER_TYPE", "chromium") or "chromium").strip()
 SOLVER_HEADLESS = env_flag("APP_SOLVER_HEADLESS", True)
 AUTO_START_SOLVER = env_flag("APP_AUTO_START_SOLVER", True)
 SOLVER_LOG_PATH = resolve_runtime_file(

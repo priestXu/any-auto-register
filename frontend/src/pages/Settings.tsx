@@ -30,7 +30,7 @@ const SELECT_FIELDS: Record<string, { label: string; value: string }[]> = {
   ],
   default_captcha_solver: [
     { label: 'YesCaptcha', value: 'yescaptcha' },
-    { label: '本地 Solver (Camoufox)', value: 'local_solver' },
+    { label: '本地 Solver (Chromium / Camoufox)', value: 'local_solver' },
     { label: '手动', value: 'manual' },
   ],
 }
