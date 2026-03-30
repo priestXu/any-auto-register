@@ -111,6 +111,21 @@ def _open_log(name: str):
     return f
 
 
+def _run_logged(command: list[str], *, cwd: Path, log_name: str):
+    log_file = _LOG_FILES.get(log_name)
+    if log_file:
+        log_file.write(f"\n$ {' '.join(command)}\n")
+        log_file.flush()
+    subprocess.run(
+        command,
+        cwd=str(cwd),
+        check=True,
+        stdout=log_file or subprocess.DEVNULL,
+        stderr=subprocess.STDOUT,
+        creationflags=_creationflags(),
+    )
+
+
 def _clone_repo_if_missing(name: str):
     repo = _repo_path(name)
     if repo.exists():
@@ -438,17 +453,10 @@ def _ensure_grok2api_conda_env(repo: Path) -> str:
 
     marker = repo / ".grok2api-env-ready"
     if not marker.exists():
-        subprocess.run(
-            [conda, "run", "--no-capture-output", "-n", env_name, "python", "-m", "pip", "install", "--upgrade", "pip"],
-            cwd=str(repo),
-            check=True,
-            creationflags=_creationflags(),
-        )
-        subprocess.run(
+        _run_logged(
             [conda, "run", "--no-capture-output", "-n", env_name, "python", "-m", "pip", "install", "."],
-            cwd=str(repo),
-            check=True,
-            creationflags=_creationflags(),
+            cwd=repo,
+            log_name="grok2api",
         )
         marker.write_text(env_name, encoding="utf-8")
     return env_name
@@ -463,27 +471,24 @@ def _ensure_grok2api_venv(repo: Path) -> str:
     venv_dir = repo / ".venv-grok2api"
     venv_python = _grok2api_venv_python(repo)
     if not venv_python.exists():
-        subprocess.run(
+        _run_logged(
             launcher + ["-m", "venv", str(venv_dir)],
-            cwd=str(repo),
-            check=True,
-            creationflags=_creationflags(),
+            cwd=repo,
+            log_name="grok2api",
         )
 
     marker = repo / ".grok2api-env-ready"
     expected_marker = f"venv:{launcher_label}"
     if not marker.exists() or marker.read_text(encoding="utf-8").strip() != expected_marker:
-        subprocess.run(
-            [str(venv_python), "-m", "pip", "install", "--upgrade", "pip"],
-            cwd=str(repo),
-            check=True,
-            creationflags=_creationflags(),
+        _run_logged(
+            [str(venv_python), "-m", "ensurepip", "--upgrade"],
+            cwd=repo,
+            log_name="grok2api",
         )
-        subprocess.run(
+        _run_logged(
             [str(venv_python), "-m", "pip", "install", "."],
-            cwd=str(repo),
-            check=True,
-            creationflags=_creationflags(),
+            cwd=repo,
+            log_name="grok2api",
         )
         marker.write_text(expected_marker, encoding="utf-8")
     return str(venv_python)

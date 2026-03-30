@@ -39,12 +39,9 @@ services:
       all_proxy: "${ALL_PROXY:-}"
       no_proxy: "${NO_PROXY:-}"
     volumes:
-      - any_auto_register_data:/app/data
+      - ./any_auto_register_data:/app/data
       - ./main.py:/app/main.py:ro
       - ./api:/app/api:ro
       - ./core:/app/core:ro
       - ./platforms:/app/platforms:ro
       - ./services:/app/services:ro
-
-volumes:
-  any_auto_register_data:

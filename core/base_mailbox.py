@@ -533,7 +533,8 @@ class MoeMailMailbox(BaseMailbox):
     def _register_and_login(self) -> str:
         import requests, random, string
         s = requests.Session()
-        s.proxies = self.proxy
+        if self.proxy:
+            s.proxies.update(self.proxy)
         ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
         s.headers.update({"user-agent": ua, "origin": self.api, "referer": f"{self.api}/zh-CN/login"})
         # 注册

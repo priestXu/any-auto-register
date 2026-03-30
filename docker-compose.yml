@@ -40,7 +40,4 @@ services:
       all_proxy: "${ALL_PROXY:-}"
       no_proxy: "${NO_PROXY:-}"
     volumes:
-      - any_auto_register_data:/app/data
-
-volumes:
-  any_auto_register_data:
+      - ./any_auto_register_data:/app/data

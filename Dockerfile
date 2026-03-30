@@ -11,6 +11,9 @@ COPY frontend/ ./
 RUN npm run build
 
 
+FROM golang:1.25-bookworm AS go-runtime
+
+
 FROM python:3.13-slim-bookworm AS app
 
 ARG HTTP_PROXY
@@ -30,6 +33,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+    PATH=/usr/local/go/bin:${PATH} \
+    GOPROXY=https://goproxy.cn,direct \
+    GOTOOLCHAIN=auto \
     HTTP_PROXY=${HTTP_PROXY} \
     HTTPS_PROXY=${HTTPS_PROXY} \
     ALL_PROXY=${ALL_PROXY} \
@@ -42,6 +48,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST}
 
 WORKDIR /app
+
+COPY --from=go-runtime /usr/local/go /usr/local/go
 
 RUN set -eux; \
     if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
