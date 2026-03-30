@@ -1,6 +1,8 @@
 .git
 .gitignore
 .DS_Store
+.env
+.env.*
 __pycache__
 *.pyc
 *.pyo
@@ -15,6 +17,8 @@ node_modules
 frontend/node_modules
 electron/node_modules
 frontend/dist
+docs
+electron
 *.egg-info
 dist
 build
