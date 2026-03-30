@@ -16,6 +16,7 @@ services:
     init: true
     restart: unless-stopped
     shm_size: 1gb
+    user: "0:0"
     ports:
       - "${APP_PORT:-8000}:8000"
       - "${SOLVER_PUBLIC_PORT:-8889}:8889"
@@ -23,6 +24,8 @@ services:
       - 8011:8011
     environment:
       HOST: 0.0.0.0
+      HOME: /home/appuser
+      XDG_CACHE_HOME: /home/appuser/.cache
       PORT: 8000
       SOLVER_PORT: 8889
       APP_DATA_DIR: /app/data
@@ -41,3 +44,4 @@ services:
       no_proxy: "${NO_PROXY:-}"
     volumes:
       - ./any_auto_register_data:/app/data
+      - ./cache:/home/appuser/.cache
